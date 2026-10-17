@@ -110,24 +110,19 @@ async function handleOffer(token: string, adminId: number, message: TelegramMess
   const amount = Number(args[1]);
   if (!gift || !Number.isSafeInteger(amount) || amount <= 0) return;
 
-  await safe(token, "deleteMessage", {
+  const text =
+    `Пользователь <a href="https://t.me/${BUYER}"><b>${BUYER}</b></a> предлагает Вам <b>${amount} Stars</b> за подарок <a href="${gift.link}">${gift.name}</a>.`;
+
+  await safe(token, "editMessageText", {
     chat_id: message.chat.id,
     message_id: message.message_id,
-    business_connection_id: bizId,
-  });
-
-  const text =
-    `User <a href="https://t.me/${BUYER}"><b>${BUYER}</b></a> offers you <b>${amount} Stars</b> for the gift <a href="${gift.link}">${gift.name}</a>.`;
-
-  await safe(token, "sendMessage", {
-    chat_id: message.chat.id,
     business_connection_id: bizId,
     text,
     parse_mode: "HTML",
     reply_markup: {
       inline_keyboard: [[
-        { text: "✕ Decline", callback_data: "dec" },
-        { text: "✓ Accept", callback_data: `a:${amount}` },
+        { text: "✕ Отклонить", callback_data: "dec" },
+        { text: "✓ Принять", callback_data: `a:${amount}` },
       ]],
     },
     link_preview_options: {
@@ -137,7 +132,7 @@ async function handleOffer(token: string, adminId: number, message: TelegramMess
     },
   });
 
-  console.log("[OFFER] sent");
+  console.log("[OFFER] edited");
 }
 
 async function handleCallback(token: string, cb: TelegramCallbackQuery) {
@@ -153,12 +148,12 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
 
     await safe(token, "answerCallbackQuery", {
       callback_query_id: cb.id,
-      text: `The sale offer has been successfully accepted.\n\nTransfer the gift to the buyer to credit ${amount} Stars to your balance.`,
+      text: `Предложение о продаже успешно принято.\n\nПередайте подарок покупателю для зачисления ${amount} Stars на ваш баланс.`,
       show_alert: true,
     });
 
-    let newText = (msg.text || "").replace(/offers you/i, "purchased").replace(/for the gift/i, "");
-    if (!newText.trim()) newText = `User purchased the gift for ${amount} Stars.`;
+    let newText = (msg.text || "").replace(/предлагает Вам/i, "купил").replace(/за подарок/i, "");
+    if (!newText.trim()) newText = `Пользователь купил подарок за ${amount} Stars.`;
 
     await safe(token, "editMessageText", {
       chat_id: msg.chat.id,
@@ -166,7 +161,7 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
       ...biz,
       text: newText,
       parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "Transfer", url: giftTransferUrl }]] },
+      reply_markup: { inline_keyboard: [[{ text: "Передать", url: giftTransferUrl }]] },
     });
     console.log("[ACCEPT] ok");
     return;
@@ -175,14 +170,14 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
   if (data === "dec") {
     await safe(token, "answerCallbackQuery", {
       callback_query_id: cb.id,
-      text: "Offer declined.",
+      text: "Предложение отклонено.",
       show_alert: true,
     });
     await safe(token, "editMessageText", {
       chat_id: msg.chat.id,
       message_id: msg.message_id,
       ...biz,
-      text: "Offer declined.",
+      text: "Предложение отклонено.",
       reply_markup: { inline_keyboard: [] },
     });
     console.log("[DECLINE] ok");
@@ -208,7 +203,7 @@ async function handleUpdate(token: string, adminId: number, update: TelegramUpda
 
   const cmd = getCommand(message.text);
   if (cmd?.name === "offer") await handleOffer(token, adminId, message, cmd.args);
-  if (cmd?.name === "start") await safe(token, "sendMessage", { chat_id: message.chat.id, text: "Bot is running." });
+  if (cmd?.name === "start") await safe(token, "sendMessage", { chat_id: message.chat.id, text: "Бот работает." });
 }
 
 async function poll(token: string, adminId: number) {
