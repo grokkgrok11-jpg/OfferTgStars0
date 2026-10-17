@@ -155,14 +155,15 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
       text: `The sale offer has been successfully accepted.\n\nTransfer the gift to the buyer to credit ${amount} Stars to your balance.`,
       show_alert: true,
     });
-    await safe(token, "editMessageText", {
+
+    // Меняем только кнопки — карточка остаётся
+    await safe(token, "editMessageReplyMarkup", {
       chat_id: msg.chat.id,
       message_id: msg.message_id,
       ...biz,
-      text: `Offer accepted.\nTransfer the gift to the buyer to credit ${amount} Stars to your balance.`,
       reply_markup: { inline_keyboard: [[{ text: "Transfer", url: giftTransferUrl }]] },
     });
-    console.log("[ACCEPT] ok");
+    console.log("[ACCEPT] buttons updated, card kept");
     return;
   }
 
