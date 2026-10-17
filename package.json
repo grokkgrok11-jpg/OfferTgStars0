@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "start": "tsx offer.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "tsx": "^4.0.0"
+  }
+}
