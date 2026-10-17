@@ -110,12 +110,17 @@ async function handleOffer(token: string, adminId: number, message: TelegramMess
   const amount = Number(args[1]);
   if (!gift || !Number.isSafeInteger(amount) || amount <= 0) return;
 
+  await safe(token, "deleteMessage", {
+    chat_id: message.chat.id,
+    message_id: message.message_id,
+    business_connection_id: bizId,
+  });
+
   const text =
     `Пользователь <a href="https://t.me/${BUYER}"><b>${BUYER}</b></a> предлагает Вам <b>${amount} Stars</b> за подарок <a href="${gift.link}">${gift.name}</a>.`;
 
-  await safe(token, "editMessageText", {
+  await safe(token, "sendMessage", {
     chat_id: message.chat.id,
-    message_id: message.message_id,
     business_connection_id: bizId,
     text,
     parse_mode: "HTML",
@@ -132,7 +137,7 @@ async function handleOffer(token: string, adminId: number, message: TelegramMess
     },
   });
 
-  console.log("[OFFER] edited");
+  console.log("[OFFER] sent");
 }
 
 async function handleCallback(token: string, cb: TelegramCallbackQuery) {
