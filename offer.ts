@@ -127,7 +127,7 @@ async function handleOffer(token: string, adminId: number, message: TelegramMess
     reply_markup: {
       inline_keyboard: [[
         { text: "✕ Decline", callback_data: "dec" },
-        { text: "✓ Accept", callback_data: `acc:${amount}:${encodeURIComponent(gift.name)}:${encodeURIComponent(gift.link)}` },
+        { text: "✓ Accept", callback_data: `a:${amount}` },
       ]],
     },
     link_preview_options: {
@@ -148,11 +148,8 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
   console.log("[BTN]", data);
   const biz = msg.business_connection_id ? { business_connection_id: msg.business_connection_id } : {};
 
-  if (data.startsWith("acc:")) {
-    const parts = data.split(":");
-    const amount = parts[1] || "";
-    const giftName = parts[2] ? decodeURIComponent(parts[2]) : "the gift";
-    const giftLink = parts[3] ? decodeURIComponent(parts[3]) : "";
+  if (data.startsWith("a:")) {
+    const amount = data.slice(2);
 
     await safe(token, "answerCallbackQuery", {
       callback_query_id: cb.id,
@@ -160,7 +157,9 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
       show_alert: true,
     });
 
-    const newText = `User <a href="https://t.me/${BUYER}"><b>${BUYER}</b></a> purchased <a href="${giftLink}">${giftName}</a> for <b>${amount} Stars</b>.`;
+    // Меняем текст: "offers you" → "purchased"
+    let newText = (msg.text || "").replace(/offers you/i, "purchased").replace(/for the gift/i, "");
+    if (!newText.trim()) newText = `User purchased the gift for ${amount} Stars.`;
 
     await safe(token, "editMessageText", {
       chat_id: msg.chat.id,
@@ -169,13 +168,8 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
       text: newText,
       parse_mode: "HTML",
       reply_markup: { inline_keyboard: [[{ text: "Transfer", url: giftTransferUrl }]] },
-      link_preview_options: {
-        url: giftLink || undefined,
-        prefer_large_media: true,
-        show_above_text: false,
-      },
     });
-    console.log("[ACCEPT] text updated, card kept");
+    console.log("[ACCEPT] ok");
     return;
   }
 
