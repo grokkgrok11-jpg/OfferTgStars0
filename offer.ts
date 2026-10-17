@@ -157,7 +157,6 @@ async function handleCallback(token: string, cb: TelegramCallbackQuery) {
       show_alert: true,
     });
 
-    // Меняем текст: "offers you" → "purchased"
     let newText = (msg.text || "").replace(/offers you/i, "purchased").replace(/for the gift/i, "");
     if (!newText.trim()) newText = `User purchased the gift for ${amount} Stars.`;
 
@@ -237,6 +236,8 @@ async function poll(token: string, adminId: number) {
 
 async function start() {
   const { token, adminId } = getConfiguration();
+  await callTelegramApi(token, "deleteWebhook", { drop_pending_updates: true });
+  console.log("[WEBHOOK] cleared");
   const me = await callTelegramApi<TelegramUser>(token, "getMe");
   console.log("[START]", me.username);
   logger.info({ username: me.username }, "connected");
